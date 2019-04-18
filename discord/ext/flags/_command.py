@@ -4,6 +4,17 @@ import typing
 from discord.ext import commands
 
 from ._default import ParamDefault
+from ._parser import FlagParser
+
+
+def _convert_to_bool(argument):
+    lowered = argument.lower()
+    if lowered in ('yes', 'y', 'true', 't', '1', 'enable', 'on'):
+        return True
+    elif lowered in ('no', 'n', 'false', 'f', '0', 'disable', 'off'):
+        return False
+    else:
+        raise commands.BadArgument(lowered + ' is not a recognised boolean option')
 
 
 class FlagCommand(commands.Command):
@@ -19,6 +30,50 @@ class FlagCommand(commands.Command):
         except Exception as e:
             raise commands.ConversionError(param.default, e) from e
         return None if param.default is param.empty else param.default
+
+    async def _actual_conversion(self, ctx, converter, argument, param):
+        if converter is bool:
+            return _convert_to_bool(argument)
+
+        try:
+            module = converter.__module__
+        except AttributeError:
+            pass
+        else:
+            if not isinstance(converter, FlagParser) and \
+              module is not None and (module.startswith('discord.') and not module.endswith('converter')):
+                converter = getattr(commands, converter.__name__ + 'Converter')
+
+        try:
+            if inspect.isclass(converter):
+                if issubclass(converter, commands.Converter):
+                    instance = converter()
+                    ret = await instance.convert(ctx, argument)
+                    return ret
+                else:
+                    method = getattr(converter, 'convert', None)
+                    if method is not None and inspect.ismethod(method):
+                        ret = await method(ctx, argument)
+                        return ret
+            elif isinstance(converter, commands.Converter):
+                ret = await converter.convert(ctx, argument)
+                return ret
+        except commands.CommandError:
+            raise
+        except Exception as exc:
+            raise commands.ConversionError(converter, exc) from exc
+
+        try:
+            return converter(argument)
+        except commands.CommandError:
+            raise
+        except Exception as exc:
+            try:
+                name = converter.__name__
+            except AttributeError:
+                name = converter.__class__.__name__
+
+            raise commands.BadArgument('Converting to "{}" failed for parameter "{}".'.format(name, param.name)) from exc
 
     async def do_conversion(self, ctx, converter, argument, param):
         try:

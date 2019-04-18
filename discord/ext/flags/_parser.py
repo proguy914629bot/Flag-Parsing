@@ -4,6 +4,7 @@ import re
 from discord.ext import commands
 
 from ._error import FlagParsingError
+from ._command import FlagCommand
 
 
 FLAG_RE = re.compile(r"(?:--(?:([a-zA-Z]+)(?:=([^\n-]+))?)|-(?:([a-zA-Z])\s+([^\n])))")
