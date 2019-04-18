@@ -4,7 +4,6 @@ import re
 from discord.ext import commands
 
 from ._error import FlagParsingError
-from ._command import FlagCommand
 
 
 FLAG_RE = re.compile(r"(?:--(?:([a-zA-Z]+)(?:=([^\n-]+))?)|-(?:([a-zA-Z])\s+([^\n])))")
@@ -71,8 +70,6 @@ class FlagParser(commands.Converter):
 
     async def convert(self, ctx, argument):
         """Returns a Dict[FlagName, FlagValue]"""
-        if not isinstance(ctx.command, FlagCommand):
-            raise TypeError("Command must be a FlagCommand object, or a subclass of it.")
         _ret = dict()
         for fg1, fv1, fg2, fv2 in FLAG_RE.findall(argument):
             flagname = fg1 or fg2
