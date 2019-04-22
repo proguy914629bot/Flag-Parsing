@@ -60,7 +60,7 @@ async def _actual_conversion(ctx, converter, argument):
         except AttributeError:
             name = converter.__class__.__name__
 
-        raise commands.BadArgument(f'Converting to "{name}" failed.') from exc
+        raise commands.BadArgument('Converting to "{}" failed.'.format(name)) from exc
 
 
 class FlagParser(commands.Converter):
@@ -81,7 +81,7 @@ class FlagParser(commands.Converter):
             try:
                 conv = self.flags[flagname]
             except KeyError:
-                raise FlagParsingError(f"Unknown flag \"{flagname}\".")
+                raise FlagParsingError("Unknown flag \"{}\".".format(flagname))
             flagvalue = await _actual_conversion(ctx, conv, flagvalue.strip())
             _ret[flagname] = flagvalue
         for flag in self.flags:
