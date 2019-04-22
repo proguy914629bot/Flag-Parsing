@@ -31,10 +31,23 @@ class FlagCommand(commands.Command):
         result = []
         for name, param in params.items():
             if isinstance(param.annotation, FlagParser):
-                fmt = ''
+                fmt = []
+
                 for flag_name, flag_type in param.annotation.flags.items():
-                    fmt += f'--{flag_name}={flag_type.__name__} '
-                result.append(fmt)
+                    actual_type = flag_type.__name__ if inspect.isclass(flag_type) else type(flag_type).__name__
+
+                    if actual_type == 'bool':
+                        bool_flag = '-{0}' if len(flag_name) == 1 else '--{0}'
+                        fmt.append(bool_flag.format(flag_name))
+                        continue
+                    if len(flag_name) == 1:
+                        fmt.append('-{0} {1}'.format(flag_name, actual_type))
+                        continue
+
+                    fmt.append('--{0}={1}'.format(flag_name, actual_type))
+
+                sig = ['[{0}]'.format(f) if param.default is not param.empty else '<{0}>'.format(f) for f in fmt]
+                result.append(' '.join(sig))
                 continue
 
             greedy = isinstance(param.annotation, commands.converter._Greedy)
