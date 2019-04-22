@@ -30,6 +30,13 @@ class FlagCommand(commands.Command):
 
         result = []
         for name, param in params.items():
+            if isinstance(param.annotation, FlagParser):
+                fmt = ''
+                for flag_name, flag_type in param.annotation.flags.items():
+                    fmt += f'--{flag_name}={flag_type.__name__} '
+                result.append(fmt)
+                continue
+
             greedy = isinstance(param.annotation, commands.converter._Greedy)
 
             try:
