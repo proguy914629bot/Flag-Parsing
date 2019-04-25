@@ -6,7 +6,7 @@ from discord.ext import commands
 from ._error import FlagParsingError
 
 
-FLAG_RE = re.compile(r"(?:--(?:([a-zA-Z]+)(?:=([^\n\-]+))?)|-(?:([a-zA-Z])\s+([^\n\-]+)))")
+FLAG_RE = re.compile(r"(?:--(?:([a-zA-Z_]+)(?:=([^\n\-]+))?)|-(?:([a-zA-Z])\s+([^\n\-]+)))")
 
 
 def _convert_to_bool(argument):
