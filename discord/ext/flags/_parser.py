@@ -29,7 +29,6 @@ class DontExitArgumentParser(argparse.ArgumentParser):
             except KeyError:
                 raise KeyError("{!r} is not a valid converter type", type_func)
             ctx = True
-            print("hello", type_func, action, arg_string)
 
         if not callable(type_func):
             msg = '%r is not callable'
@@ -41,7 +40,6 @@ class DontExitArgumentParser(argparse.ArgumentParser):
                 result = type_func(self.ctx, arg_string)
             else:
                 result = type_func(arg_string)
-            print(result)
 
         # ArgumentTypeErrors indicate errors
         except argparse.ArgumentTypeError:

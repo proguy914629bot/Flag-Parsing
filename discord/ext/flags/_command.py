@@ -15,9 +15,7 @@ def command(**kwargs):
 
         if not issubclass(kwargs['cls'], FlagCommand):
             raise TypeError("'cls' kwarg must inherit from FlagCommand")
-        print("1")
         func.parser = _parser.DontExitArgumentParser()
-        print(func.__globals__.keys())
         return commands.command(**kwargs)(func)
     return inner
 
@@ -29,9 +27,7 @@ def group(**kwargs):
 
         if not issubclass(kwargs['cls'], FlagCommand):
             raise TypeError("'cls' kwarg must inherit from FlagGroup")
-        print(2)
         func.parser = _parser.DontExitArgumentParser()
-        print(func.__globals__.keys())
         return commands.group(**kwargs)(func)
     return inner
 
@@ -42,7 +38,6 @@ def add_flag(*flag_names, **kwargs):
             nfunc = func.callback
         else:
             nfunc = func
-        print(3)
         if not hasattr(nfunc, "parser"):
             raise RuntimeError("add_flag should be placed above \"@flags.command()\"")
         nfunc.parser.add_argument(*flag_names, **kwargs)
