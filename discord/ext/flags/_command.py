@@ -14,8 +14,8 @@ def command(**kwargs):
             kwargs['cls'] = FlagCommand
 
         if not issubclass(kwargs['cls'], FlagCommand):
-            raise TypeError("'cls' kwarg must inherit from FlagCommand")
-        func.parser = _parser.DontExitArgumentParser()
+            raise TypeError("\"cls\" kwarg must inherit from FlagCommand")
+
         return commands.command(**kwargs)(func)
     return inner
 
@@ -26,29 +26,28 @@ def group(**kwargs):
             kwargs['cls'] = FlagGroup
 
         if not issubclass(kwargs['cls'], FlagCommand):
-            raise TypeError("'cls' kwarg must inherit from FlagGroup")
-        func.parser = _parser.DontExitArgumentParser()
+            raise TypeError("\"cls\" kwarg must inherit from FlagGroup")
         return commands.group(**kwargs)(func)
     return inner
 
 
 def add_flag(*flag_names, **kwargs):
     def inner(func):
-        if isinstance(func, commands.Command):
-            nfunc = func.callback
-        else:
-            nfunc = func
-        if not hasattr(nfunc, "parser"):
-            raise RuntimeError("add_flag should be placed above \"@flags.command()\"")
-        nfunc.parser.add_argument(*flag_names, **kwargs)
+        if not isinstance(func, FlagCommand):
+            raise ValueError("must be applied above \"@flags.command()\"")
+        func.parser.add_argument(*flag_names, **kwargs)
         return func
     return inner
 
 
 class FlagCommand(commands.Command):
+    def __init__(self, *args, **kwargs):
+        self.parser = _parser.DontExitArgumentParser()
+        super().__init__(*args, **kwargs)
+
     async def _parse_flag_arguments(self, ctx):
         argument = ctx.view.read_rest()
-        namespace = self.callback.parser.parse_args(shlex.split(argument), ctx=ctx)
+        namespace = self.parser.parse_args(shlex.split(argument), ctx=ctx)
         ctx.kwargs.update(vars(namespace))
 
     async def _parse_arguments(self, ctx):

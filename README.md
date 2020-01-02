@@ -6,6 +6,11 @@ To install, run the following command:
 pip install discord-flags
 ```
 
+You can install the legacy parser by running:
+```
+pip install discord-flags==1.5.2
+```
+
 Basic example usage:
 
 ```python
@@ -31,3 +36,15 @@ decorators.
 
 `@flags.add_flag` takes the same arguments as `argparse.ArgumentParser.add_argument`
 to keep things simple.
+
+Subcommands are just as simple:
+```python
+@commands.group()
+async def my_group(ctx):
+    ...
+
+@flags.add_flag("-n")
+@my_group.command(cls=flags.FlagCommand)
+async def my_subcommand(ctx, **flags):
+    ...
+```
