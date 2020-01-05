@@ -1,8 +1,5 @@
 import argparse
-import re
 import sys
-from argparse import OPTIONAL, ONE_OR_MORE
-from gettext import ngettext
 
 from discord.ext import commands
 
