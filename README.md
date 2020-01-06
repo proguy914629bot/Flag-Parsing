@@ -1,3 +1,14 @@
+[download]: https://pypi.org/project/discord-flags/
+[version]: https://img.shields.io/pypi/v/Discord-Flags
+[license]: https://github.com/XuaTheGrate/Flag-Parsing/blob/master/LICENSE.md
+[license-s]: https://img.shields.io/github/license/XuaTheGrate/Flag-Parsing
+[python]: https://www.python.org/
+[python-s]: https://img.shields.io/pypi/pyversions/discord-flags
+
+[ ![version][] ][download]
+[ ![python-s][] ][python]
+[ ![license-s][] ][license]
+
 # Flag Parsing
 A util for discord.py bots that allow passing flags into commands.
 

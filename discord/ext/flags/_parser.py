@@ -11,7 +11,10 @@ class ArgumentParsingError(commands.CommandError):
 
 
 class DontExitArgumentParser(argparse.ArgumentParser):
-    ctx = None
+    def __init__(self, *args, **kwargs):
+        self.ctx = None
+        kwargs.pop('add_help', False)
+        super().__init__(*args, add_help=False, **kwargs)
 
     def error(self, message):
         raise ArgumentParsingError(message)
