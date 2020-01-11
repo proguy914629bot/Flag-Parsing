@@ -1,9 +1,9 @@
-import inspect
 import shlex
 from collections import namedtuple
 
 import discord
 from discord.ext import commands
+from discord.ext.commands import converter
 
 from . import _parser
 
@@ -48,6 +48,86 @@ class FlagCommand(commands.Command):
         arg = ctx.view.read_rest()
         namespace = self.callback._def_parser.parse_args(shlex.split(arg), ctx=ctx)
         ctx.kwargs.update(vars(namespace))
+
+    @property
+    def old_signature(self):
+        if self.usage is not None:
+            return self.usage
+
+        params = self.clean_params
+        if not params:
+            return ''
+
+        result = []
+        for name, param in params.items():
+            greedy = isinstance(param.annotation, converter._Greedy)
+
+            if param.default is not param.empty:
+                # We don't want None or '' to trigger the [name=value] case and instead it should
+                # do [name] since [name=None] or [name=] are not exactly useful for the user.
+                should_print = param.default if isinstance(param.default, str) else param.default is not None
+                if should_print:
+                    result.append('[%s=%s]' % (name, param.default) if not greedy else
+                                  '[%s=%s]...' % (name, param.default))
+                    continue
+                else:
+                    result.append('[%s]' % name)
+
+            elif param.kind == param.VAR_POSITIONAL:
+                result.append('[%s...]' % name)
+            elif greedy:
+                result.append('[%s]...' % name)
+            elif self._is_typing_optional(param.annotation):
+                result.append('[%s]' % name)
+            elif param.kind == param.VAR_KEYWORD:
+                pass
+            else:
+                result.append('<%s>' % name)
+
+        return ' '.join(result)
+
+    @property
+    def signature(self):
+        result = self.old_signature
+        to_append = [result]
+        parser = self.callback._def_parser  # type: _parser.DontExitArgumentParser
+
+        for action in parser._actions:
+            # in argparse, options are done before positionals
+            #  so we need to loop over it twice unfortunately
+            if action.option_strings:
+                name = action.dest.upper()
+                flag = action.option_strings[0].lstrip('-').replace('-', '_')
+                k = '-' if len(flag) == 1 else '--'
+                should_print = action.default is not None and action.default != ''
+                if action.required:
+                    if should_print:
+                        to_append.append('<%s%s %s=%s>' % (k, flag, name, action.default))
+                    else:
+                        to_append.append('<%s%s %s>' % (k, flag, name))
+                else:
+                    if should_print:
+                        to_append.append('[%s%s %s=%s]' % (k, flag, name, action.default))
+                    else:
+                        to_append.append('[%s%s %s]' % (k, flag, name))
+
+        for action in parser._actions:
+            # here we do the positionals
+            if not action.option_strings:
+                name = action.dest
+                should_print = action.default is not None and action.default != ''
+                if action.nargs in ('*', '?'):  # optional narg types
+                    if should_print:
+                        to_append.append('[%s=%s]' % (name, action.default))
+                    else:
+                        to_append.append('[%s]' % name)
+                else:
+                    if should_print:
+                        to_append.append('<%s=%s>' % (name, action.default))
+                    else:
+                        to_append.append('<%s>' % name)
+
+        return ' '.join(to_append)
 
     async def _parse_arguments(self, ctx):
         ctx.args = [ctx] if self.cog is None else [self.cog, ctx]

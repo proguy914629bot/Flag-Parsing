@@ -9,6 +9,9 @@
 [ ![python-s][] ][python]
 [ ![license-s][] ][license]
 
+⚠ Please be sure to read the entire README, it explains
+some important tricks.
+
 # Flag Parsing
 A util for discord.py bots that allow passing flags into commands.
 
@@ -21,6 +24,9 @@ You can install the legacy parser by running:
 ```
 pip install discord-flags==1.5.2
 ```
+
+**2.1.0 changes how signatures appear. If you wish to use
+the legacy signatures, use `command.old_signature` instead.**
 
 Basic example usage:
 
@@ -58,4 +64,13 @@ async def my_group(ctx):
 @my_group.command(cls=flags.FlagCommand)
 async def my_subcommand(ctx, **flags):
     ...
+```
+
+Usage of discord.py's `consume rest` behaviour is not perfect with `discord-flags`,
+meaning that you have to use a flag workaround:
+```python
+@flags.add_flag("message", nargs="+")
+@flags.command()
+async def my_command(ctx, arg1, **options):
+    """ You can now access `message` via `options['message'][0]` """
 ```
