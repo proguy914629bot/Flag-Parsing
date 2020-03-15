@@ -1,13 +1,15 @@
 import argparse
 import sys
 
+from discord.utils import escape_mentions
 from discord.ext import commands
 
 from ._converters import CONVERTERS
 
 
 class ArgumentParsingError(commands.CommandError):
-    pass
+    def __init__(self, message):
+        super().__init__(escape_mentions(message))
 
 
 class DontExitArgumentParser(argparse.ArgumentParser):
