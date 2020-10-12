@@ -72,5 +72,6 @@ meaning that you have to use a flag workaround:
 @flags.add_flag("message", nargs="+")
 @flags.command()
 async def my_command(ctx, arg1, **options):
-    """ You can now access `message` via `options['message'][0]` """
+    """ You can now access `message` via `options['message']` """
+    message = ' '.join(options['message'])
 ```
