@@ -3,6 +3,7 @@ import sys
 
 from discord.utils import escape_mentions
 from discord.ext import commands
+from discord.ext.commands.core import _convert_to_bool
 
 from ._converters import CONVERTERS
 
@@ -35,6 +36,10 @@ class DontExitArgumentParser(argparse.ArgumentParser):
         if not callable(type_func):
             msg = '%r is not callable'
             raise argparse.ArgumentError(action, msg % type_func)
+
+        # if type is bool, use the discord.py's bool converter
+        if type_func is bool:
+            type_func = _convert_to_bool
 
         # convert the value to the appropriate type
         try:
