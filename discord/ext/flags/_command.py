@@ -1,5 +1,8 @@
 import shlex
 from collections import namedtuple
+import inspect
+import argparse
+import sys
 
 import discord
 from discord.ext import commands
@@ -47,7 +50,28 @@ class FlagCommand(commands.Command):
             return
         arg = ctx.view.read_rest()
         namespace = self.callback._def_parser.parse_args(shlex.split(arg), ctx=ctx)
-        ctx.kwargs.update(vars(namespace))
+        flags = vars(namespace)
+
+        for flag, (convert, (action, arg_string)) in flags.items():
+            try:
+                ctx.kwargs.update({flag: await discord.utils.maybe_coroutine(convert)})
+            except Exception as e:
+                # we need to remove all the unawaited coroutine if any.
+                for _, func in flags.items():
+                    if inspect.isawaitable(func):
+                        func.close()
+
+                # ArgumentTypeErrors indicate errors
+                if isinstance(e, argparse.ArgumentTypeError):
+                    msg = str(sys.exc_info()[1])
+                    raise argparse.ArgumentError(action, msg)
+
+                # TypeErrors or ValueErrors also indicate errors
+                if isinstance(e, (TypeError, ValueError)):
+                    name = getattr(action.type, '__name__', repr(action.type))
+                    args = {'type': name, 'value': arg_string}
+                    msg = 'invalid %(type)s value: %(value)r'
+                    raise argparse.ArgumentError(action, msg % args)
 
     @property
     def old_signature(self):

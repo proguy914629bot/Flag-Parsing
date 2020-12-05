@@ -1,11 +1,9 @@
 import argparse
-import sys
+import inspect
+import functools
 
 from discord.utils import escape_mentions
 from discord.ext import commands
-from discord.ext.commands.core import _convert_to_bool
-
-from ._converters import CONVERTERS
 
 
 class ArgumentParsingError(commands.CommandError):
@@ -23,15 +21,24 @@ class DontExitArgumentParser(argparse.ArgumentParser):
         raise ArgumentParsingError(message)
 
     def _get_value(self, action, arg_string):
-        ctx = False
         type_func = self._registry_get('type', action.type, action.type)
+        param = [arg_string]
 
-        if hasattr(type_func, '__module__') and type_func.__module__.startswith('discord'):
-            try:
-                type_func = CONVERTERS[type_func.__name__]
-            except KeyError:
-                raise KeyError("{!r} is not a valid converter type", type_func)
-            ctx = True
+        if hasattr(type_func, '__module__'):
+            module = type_func.__module__
+            if module.startswith('discord') and not module.endswith('converter'):
+                # gets the default discord.py converter
+                try:
+                    type_func = getattr(commands.converter, type_func.__name__ + 'Converter')
+                except AttributeError:
+                    pass
+
+        # for custom converter compatibility
+        if issubclass(type_func, commands.Converter):
+            if inspect.isclass(type_func):
+                type_func = type_func()
+            type_func = type_func.convert
+            param.insert(0, self.ctx)
 
         if not callable(type_func):
             msg = '%r is not callable'
@@ -39,30 +46,12 @@ class DontExitArgumentParser(argparse.ArgumentParser):
 
         # if type is bool, use the discord.py's bool converter
         if type_func is bool:
-            type_func = _convert_to_bool
+            type_func = commands.core._convert_to_bool
 
-        # convert the value to the appropriate type
-        try:
-            if ctx:
-                result = type_func(self.ctx, arg_string)
-            else:
-                result = type_func(arg_string)
-
-        # ArgumentTypeErrors indicate errors
-        except argparse.ArgumentTypeError:
-            name = getattr(action.type, '__name__', repr(action.type))
-            msg = str(sys.exc_info()[1])
-            raise argparse.ArgumentError(action, msg)
-
-        # TypeErrors or ValueErrors also indicate errors
-        except (TypeError, ValueError):
-            name = getattr(action.type, '__name__', repr(action.type))
-            args = {'type': name, 'value': arg_string}
-            msg = 'invalid %(type)s value: %(value)r'
-            raise argparse.ArgumentError(action, msg % args)
-
-        # return the converted value
-        return result
+        # convert into a partial function
+        result = functools.partial(type_func, *param)
+        # return the function, with it's action and arg_string
+        return result, (action, arg_string)
 
     # noinspection PyMethodOverriding
     def parse_args(self, args, namespace=None, *, ctx):
