@@ -2,8 +2,11 @@ import argparse
 import inspect
 import functools
 
+from collections import namedtuple
 from discord.utils import escape_mentions
 from discord.ext import commands
+
+ParserResult = namedtuple("ParserResult", "result action arg_string")
 
 
 class ArgumentParsingError(commands.CommandError):
@@ -50,8 +53,8 @@ class DontExitArgumentParser(argparse.ArgumentParser):
 
         # convert into a partial function
         result = functools.partial(type_func, *param)
-        # return the function, with it's action and arg_string
-        return result, (action, arg_string)
+        # return the function, with it's action and arg_string in a namedtuple.
+        return ParserResult(result, action, arg_string)
 
     # noinspection PyMethodOverriding
     def parse_args(self, args, namespace=None, *, ctx):

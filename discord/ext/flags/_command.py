@@ -1,6 +1,5 @@
 import shlex
 from collections import namedtuple
-import inspect
 import argparse
 import sys
 
@@ -52,21 +51,25 @@ class FlagCommand(commands.Command):
         namespace = self.callback._def_parser.parse_args(shlex.split(arg), ctx=ctx)
         flags = vars(namespace)
 
-        for flag, (convert, (action, arg_string)) in flags.items():
-            try:
-                ctx.kwargs.update({flag: await discord.utils.maybe_coroutine(convert)})
+        for flag, value in flags.items():
+            # Would only call if a value is from _get_value else it is already a value.
+            if type(value) is _parser.ParserResult:
+                try:
+                    value = await discord.utils.maybe_coroutine(value.result)
 
-            # ArgumentTypeErrors indicate errors
-            except argparse.ArgumentTypeError:
-                msg = str(sys.exc_info()[1])
-                raise argparse.ArgumentError(action, msg)
+                # ArgumentTypeErrors indicate errors
+                except argparse.ArgumentTypeError:
+                    msg = str(sys.exc_info()[1])
+                    raise argparse.ArgumentError(value.action, msg)
 
-            # TypeErrors or ValueErrors also indicate errors
-            except (TypeError, ValueError):
-                name = getattr(action.type, '__name__', repr(action.type))
-                args = {'type': name, 'value': arg_string}
-                msg = 'invalid %(type)s value: %(value)r'
-                raise argparse.ArgumentError(action, msg % args)
+                # TypeErrors or ValueErrors also indicate errors
+                except (TypeError, ValueError):
+                    name = getattr(value.action.type, '__name__', repr(value.action.type))
+                    args = {'type': name, 'value': value.arg_string}
+                    msg = 'invalid %(type)s value: %(value)r'
+                    raise argparse.ArgumentError(value.action, msg % args)
+
+            ctx.kwargs.update({flag: value})
 
     @property
     def old_signature(self):
