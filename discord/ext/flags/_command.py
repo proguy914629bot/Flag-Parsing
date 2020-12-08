@@ -51,7 +51,7 @@ class FlagCommand(commands.Command):
         namespace = self.callback._def_parser.parse_args(shlex.split(arg), ctx=ctx)
         flags = vars(namespace)
 
-        for flag, value in flags.items():
+        async def do_convertion(value):
             # Would only call if a value is from _get_value else it is already a value.
             if type(value) is _parser.ParserResult:
                 try:
@@ -68,7 +68,14 @@ class FlagCommand(commands.Command):
                     args = {'type': name, 'value': value.arg_string}
                     msg = 'invalid %(type)s value: %(value)r'
                     raise argparse.ArgumentError(value.action, msg % args)
+            return value
 
+        for flag, value in flags.items():
+            # iterate if value is a list, this happens when nargs = '+'
+            if type(value) is list:
+                value = [await do_convertion(v) for v in value]
+            else:
+                value = await do_convertion(value)
             ctx.kwargs.update({flag: value})
 
     @property
