@@ -27,7 +27,7 @@ class DontExitArgumentParser(argparse.ArgumentParser):
         type_func = self._registry_get('type', action.type, action.type)
         param = [arg_string]
 
-        if hasattr(type_func, '__module__'):
+        if hasattr(type_func, '__module__') and type_func.__module__ is not None:
             module = type_func.__module__
             if module.startswith('discord') and not module.endswith('converter'):
                 # gets the default discord.py converter
@@ -37,11 +37,10 @@ class DontExitArgumentParser(argparse.ArgumentParser):
                     pass
 
         # for custom converter compatibility
-        if issubclass(type_func, commands.Converter):
-            if inspect.isclass(type_func):
-                type_func = type_func()
-            type_func = type_func.convert
-            param.insert(0, self.ctx)
+        if inspect.isclass(type_func):
+            if issubclass(type_func, commands.Converter):
+                type_func = type_func().convert
+                param.insert(0, self.ctx)
 
         if not callable(type_func):
             msg = '%r is not callable'
