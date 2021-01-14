@@ -1,5 +1,7 @@
 import shlex
 from collections import namedtuple
+import argparse
+import sys
 
 import discord
 from discord.ext import commands
@@ -47,7 +49,34 @@ class FlagCommand(commands.Command):
             return
         arg = ctx.view.read_rest()
         namespace = self.callback._def_parser.parse_args(shlex.split(arg), ctx=ctx)
-        ctx.kwargs.update(vars(namespace))
+        flags = vars(namespace)
+
+        async def do_convertion(value):
+            # Would only call if a value is from _get_value else it is already a value.
+            if type(value) is _parser.ParserResult:
+                try:
+                    value = await discord.utils.maybe_coroutine(value.result)
+
+                # ArgumentTypeErrors indicate errors
+                except argparse.ArgumentTypeError:
+                    msg = str(sys.exc_info()[1])
+                    raise argparse.ArgumentError(value.action, msg)
+
+                # TypeErrors or ValueErrors also indicate errors
+                except (TypeError, ValueError):
+                    name = getattr(value.action.type, '__name__', repr(value.action.type))
+                    args = {'type': name, 'value': value.arg_string}
+                    msg = 'invalid %(type)s value: %(value)r'
+                    raise argparse.ArgumentError(value.action, msg % args)
+            return value
+
+        for flag, value in flags.items():
+            # iterate if value is a list, this happens when nargs = '+'
+            if type(value) is list:
+                value = [await do_convertion(v) for v in value]
+            else:
+                value = await do_convertion(value)
+            ctx.kwargs.update({flag: value})
 
     @property
     def old_signature(self):
