@@ -1,5 +1,3 @@
-# THIS IS DEPRECATED AND WILL BE REMOVED WHEN RAPPTZ WORKS ON AN OFFICIAL IMPLEMENTATION
-
 [download]: https://pypi.org/project/discord-flags/
 [version]: https://img.shields.io/pypi/v/Discord-Flags
 [license]: https://github.com/XuaTheGrate/Flag-Parsing/blob/master/LICENSE.md
